@@ -6,6 +6,7 @@ export const pdfUpload = async(req, res)=>{
     res.status(200).json({
         success: true,
         message: "pdf upload successfully",
+        documentId: result
     })
    }
    catch(error){
