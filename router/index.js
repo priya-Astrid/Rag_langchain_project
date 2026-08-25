@@ -6,7 +6,9 @@ const router = express.Router();
 
 const upload = multer({dest:"upload/"});
 
-router.post("/upload", upload.single("pdf"),pdfUpload );
+// router.post("/upload", upload.single("pdf"),pdfUpload );
+
+router.post("/upload", upload.array("pdfs",2) ,pdfUpload );
 
 router.post("/usertopic", userTopicData );
 export default router;
