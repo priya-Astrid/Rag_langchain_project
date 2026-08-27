@@ -1,0 +1,157 @@
+Phase 1 — Retrieval ko strong karo
+Retriever kya hota hai
+asRetriever() kya karta hai
+Similarity Search vs MMR
+Top-K kaise decide kare
+Score threshold
+Metadata filtering
+Hybrid Search
+Semantic search
+Keyword search
+BM25
+Reranking
+Context compression
+Retrieval evaluation
+
+Phase 2 — Production RAG Architecture
+Query preprocessing
+Query rewriting
+Multi-query retrieval
+Parent-child retrieval
+Metadata strategy
+Chunking strategies
+Document deduplication
+Incremental document ingestion
+Delete/update document
+Multi-user isolation
+Phase 3 — Advanced RAG
+Conversational RAG
+Chat history
+Follow-up questions
+Memory
+Multi-turn retrieval
+HyDE
+Multi-vector retrieval
+Agentic RAG
+Self-RAG
+Corrective RAG
+Phase 4 — Production Engineering
+Authentication
+Authorization
+User-wise document access
+API architecture
+Error handling
+Logging
+Rate limiting
+Retry mechanism
+Timeout handling
+Caching
+Redis
+Queue/background ingestion
+Batch embedding
+Streaming responses
+Cost optimization
+Phase 5 — RAG Evaluation
+
+Ye bahut important hai production ke liye.
+
+Retrieval quality
+Precision / Recall
+Context relevance
+Faithfulness
+Answer relevance
+RAGAS
+Golden dataset
+Evaluation pipeline
+Hallucination detection
+Phase 6 — Deployment
+Docker
+Qdrant Cloud
+MongoDB
+Redis
+Production environment variables
+CI/CD
+Monitoring
+Scaling
+Security
+Observability
+🚀 Tumhare current project mein next kya karna chahiye?
+
+Tumhare AI Chat with PDF project ko hi production-level banayenge.
+
+Abhi tumhara flow roughly:
+
+PDF
+ ↓
+PDFLoader
+ ↓
+Chunking
+ ↓
+Embedding
+ ↓
+Qdrant
+ ↓
+Similarity Search
+ ↓
+Top-K Context
+ ↓
+Prompt
+ ↓
+LLM
+ ↓
+Answer
+
+Isko hum gradually:
+
+User
+ ↓
+Authentication
+ ↓
+Question
+ ↓
+Query Processing
+ ↓
+Query Rewrite
+ ↓
+Retriever
+ ↓
+Metadata Filter
+ ↓
+Hybrid Search
+ ↓
+Reranker
+ ↓
+Context Compression
+ ↓
+LLM
+ ↓
+Streaming Response
+ ↓
+Citation / Sources
+ ↓
+Logging + Evaluation
+
+
+Tumhara current RAG level
+RAG Topic	        Status	      Tumne kya kiya
+LLM basics	        ✅ ~80%	    Tokens, context window, embeddings basics
+Embeddings	        ✅ ~80%	    gemini-embedding-001, embedQuery()
+PDF ingestion	    ✅ 100%     	PDFLoader
+Chunking	        ✅ 90%	    RecursiveCharacterTextSplitter
+Chunk overlap   	✅ 90%	    chunkSize, chunkOverlap
+Vector DB concept	✅ 90%	    Vector DB vs SQL/NoSQL
+Qdrant          	✅ ~85%	    Collection, vectors, payload, indexes
+Store embeddings	✅ 100%     	PDF chunks → embeddings → Qdrant
+Similarity Search	✅ ~85%	    Cosine similarity / Qdrant query
+Metadata filtering	✅ ~90%     	userId + documentId filtering
+Multi-PDF RAG   	✅ ~85%	    Multiple documents with documentId
+Retrieval	        ✅ ~80%	    Top-K + score threshold
+Prompting       	✅ ~75%	    ChatPromptTemplate
+LLM generation	    ✅ ~80%	    Retrieved context → LLM
+RAG pipeline	    ✅ ~80%     	Upload → Chunk → Embed → Store → Retrieve → Generate
+LangChain	        🟡 ~65%      Core components samajh rahe ho
+Production RAG  	🟡 ~35%    	 Abhi major topics baaki hain
+
+RAG fundamentals + mini-project: ~80–85% complete
+Lekin production-level RAG: ~35–40% complete.
+Ye difference important hai. Tumhara basic RAG pipeline ban gaya hai, ab humein usko production-grade system banana hai.

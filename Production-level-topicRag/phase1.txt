@@ -1,0 +1,32 @@
+# learning rag advance =>
+/**
+# 26 aug
+
+Advanced + Production-level RAG kar rahe hain.
+
+Tumhara current progress 
+PDF Loading                  ✅
+Chunking                     ✅
+Embeddings                   ✅
+Qdrant                       ✅
+VectorStore                  ✅
+Retriever                    ✅
+asRetriever()                ✅
+Automatic query embedding   ✅
+Metadata filtering           ✅
+Top-K                        ✅
+MMR   
+Reranking
+--------------------
+
+Ab tak tumhara retrieval knowledge
+✅ VectorStore
+✅ QdrantVectorStore
+✅ asRetriever()
+✅ invoke()
+✅ Automatic query embedding
+✅ k / Top-K
+✅ Metadata filtering
+⬅️ MMR — ab seekh rahi ho
+ReRanking concept
+*/
