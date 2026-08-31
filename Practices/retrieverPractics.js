@@ -1,4 +1,5 @@
 import { data } from "../config/vectorstore.js";
+import { queryWriting } from "./QueryRewriter.js";
 export const RetrievalData = async () => {
   const vectorStore = await data();
 
@@ -25,7 +26,9 @@ export const RetrievalData = async () => {
   });
 
   const question = "in the afternoon";
-  const result = await retriever.invoke(question);
+  const rewritteques = await queryWriting(question);
+
+  const result = await retriever.invoke(rewritteques);
   console.log("result: ", result);
 };
 RetrievalData();
