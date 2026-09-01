@@ -12,7 +12,7 @@ Qdrant                       ✅
 VectorStore                  ✅
 Retriever                    ✅
 asRetriever()                ✅
-Automatic query embedding   ✅
+Automatic query embedding    ✅
 Metadata filtering           ✅
 Top-K                        ✅
 MMR   
