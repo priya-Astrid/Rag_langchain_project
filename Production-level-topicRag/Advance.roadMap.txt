@@ -24,6 +24,7 @@ Document deduplication
 Incremental document ingestion
 Delete/update document
 Multi-user isolation
+
 Phase 3 — Advanced RAG
 Conversational RAG
 Chat history
@@ -35,6 +36,7 @@ Multi-vector retrieval
 Agentic RAG
 Self-RAG
 Corrective RAG
+
 Phase 4 — Production Engineering
 Authentication
 Authorization
@@ -64,6 +66,7 @@ RAGAS
 Golden dataset
 Evaluation pipeline
 Hallucination detection
+
 Phase 6 — Deployment
 Docker
 Qdrant Cloud
@@ -155,3 +158,31 @@ Production RAG  	🟡 ~35%    	 Abhi major topics baaki hain
 RAG fundamentals + mini-project: ~80–85% complete
 Lekin production-level RAG: ~35–40% complete.
 Ye difference important hai. Tumhara basic RAG pipeline ban gaya hai, ab humein usko production-grade system banana hai.
+
+--------------------------
+
+Query Rewriting
+      ↓
+Multi-Query Retrieval
+      ↓
+Hybrid Search
+      ↓
+Context Compression
+      ↓
+Parent-Child Retrieval
+      ↓
+Conversational RAG
+      ↓
+Agentic RAG
+      ↓
+RAG Evaluation
+      ↓
+Production Security
+      ↓
+Caching / Redis
+      ↓
+Streaming
+      ↓
+Observability
+      ↓
+Deployment
