@@ -160,7 +160,8 @@ Lekin production-level RAG: ~35–40% complete.
 Ye difference important hai. Tumhara basic RAG pipeline ban gaya hai, ab humein usko production-grade system banana hai.
 
 --------------------------
-
+ReRanker
+      ↓
 Query Rewriting
       ↓
 Multi-Query Retrieval
