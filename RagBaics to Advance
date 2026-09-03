@@ -1,0 +1,32 @@
+your current progress ko dekhte hue main sequence ye rakhunga:
+
+✅ Embeddings
+✅ Vector DB
+✅ Qdrant
+✅ Basic Retrieval
+✅ LangChain Retriever
+✅ MMR
+✅ Multi Query
+✅ Deduplication
+✅ Cohere Reranking
+✅ Manual Context Compression
+        ↓
+👉 ContextualCompressionRetriever = Done
+        ↓
+👉 Hybrid Search = pending
+        ↓
+👉 Query Rewriting = Done
+        ↓
+👉 Query Router = in proress
+        ↓
+👉 Citations
+        ↓
+👉 Memory / Conversational RAG
+        ↓
+👉 Production RAG API
+        ↓
+👉 Evaluation
+        ↓
+👉 Observability
+
+Sa
