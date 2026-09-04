@@ -1,7 +1,7 @@
 // llm Based router
 
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import { generateContentAI } from "../../config/generateContent.js";
+import { generateContentAI } from "../config/generateContent.js";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export const llmBasedRouterApproach = async () => {

@@ -23,14 +23,14 @@ const router = (question) => {
     "versus",
   ];
   const isComplex = complexKeyword.some((Keyword) =>
-    normalizedQuestion.include(Keyword),
+    normalizedQuestion.includes(Keyword),
   );
 
   return isComplex ? "complex" : "simple";
 };
 
 export const RuleBasedRouterApproach = async () => {
-  const question = "what is mongodb";
+  const question = "disadvantage of  Node and  mongodb";
 
   const result = router(question);
   const route = result.trim().toLowerCase();

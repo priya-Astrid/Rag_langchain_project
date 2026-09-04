@@ -1,0 +1,664 @@
+
+Lesson: Hybrid Search
+
+Abhi tumhara retrieval mainly Vector Search hai:
+
+Question
+   ↓
+Embedding
+   ↓
+Qdrant Vector Search
+   ↓
+Similar Documents
+
+Problem: vector search semantic meaning samajhne me strong hai, lekin exact keywords, IDs, error codes, names, numbers etc. me kabhi miss kar sakta hai.
+
+Example:
+
+Question:
+"What is error code ERR_401?"
+
+Vector search ko ERR_401 ka exact match milna guaranteed nahi.
+
+Isliye hum combine karte hain:
+
+             User Question
+                  ↓
+          ┌───────┴────────┐
+          ↓                ↓
+     Vector Search     Keyword Search
+     (semantic)        (exact match)
+          ↓                ↓
+       Results           Results
+          └───────┬────────┘
+                  ↓
+              Fusion
+                  ↓
+            Final Results
+                  ↓
+              Reranker
+                  ↓
+             Compression
+                  ↓
+               Answer
+1. Vector Search vs Keyword Search
+Vector Search
+
+Question:
+
+"Why is MongoDB scalable?"
+
+Document:
+
+"MongoDB can horizontally scale using sharding."
+
+Exact words same nahi hain, but meaning similar hai.
+
+Vector search isko retrieve kar sakta hai. ✅
+
+Keyword Search
+
+Question:
+
+"ERR_401 authentication failed"
+
+Document:
+
+"ERR_401 occurs when authentication credentials are invalid."
+
+Yahan exact term:
+
+ERR_401
+
+bahut important hai.
+
+Keyword search strong hai. ✅
+
+2. Hybrid ka benefit
+
+Hybrid:
+
+Vector Search
++
+Keyword Search
+
+Matlab:
+
+Semantic understanding + Exact matching
+
+Isliye production RAG me hybrid search useful hota hai, especially documents me:
+
+Error codes
+Product IDs
+User IDs
+Names
+VIN
+IMEI
+Dates
+Technical terms
+Exact phrases
+
+Tumhare Geotrack-type domain me, for example:
+
+IMEI: 865734829102345
+VIN: 1HGCM82633A123456
+
+exact identifiers ke liye keyword/exact matching important ho sakti hai.
+
+3. Hybrid Search ke 2 major approaches
+
+Hum generally do approaches dekhte hain:
+
+Approach 1 — Vector + BM25
+Vector Search → semantic
+BM25 → keyword
+
+Then:
+
+Vector Results
+      +
+BM25 Results
+      ↓
+Fusion
+Approach 2 — Vector + Sparse Vectors
+
+Qdrant jaise vector databases sparse + dense vectors support kar sakte hain.
+
+Dense Vector
+   ↓
+Semantic meaning
+
+Sparse Vector
+   ↓
+Keyword matching
+
+Then Qdrant hybrid search kar sakta hai.
+
+
+
+To hum next ye architecture samjhenge:
+
+                    Question
+                       ↓
+             ┌─────────┴─────────┐
+             ↓                   ↓
+       Dense Search         Keyword Search
+          Qdrant                 BM25
+             ↓                   ↓
+          Results              Results
+             └─────────┬─────────┘
+                       ↓
+                    Fusion
+                       ↓
+                  Deduplication
+                       ↓
+                 Cohere Rerank
+                       ↓
+                  Compression
+                       ↓
+                     LLM
+5. Sabse pehle BM25
+
+Hybrid Search samajhne ke liye pehle BM25 samajhna zaroori hai.
+
+BM25 ek keyword-based ranking algorithm hai.
+
+Example documents:
+
+D1:
+MongoDB is a NoSQL database.
+
+D2:
+MongoDB provides horizontal scalability.
+
+D3:
+PostgreSQL is a relational database.
+
+Question:
+
+"MongoDB scalability"
+
+BM25 dekhega:
+
+MongoDB → D1, D2
+scalability → D2
+
+To D2 ko strong relevance milegi.
+
+6. BM25 vs Vector Search
+Feature                 	Vector  	BM25
+Semantic meaning    	⭐⭐⭐⭐⭐	⭐⭐
+Exact keyword	        ⭐⭐⭐      	⭐⭐⭐⭐⭐
+Error code	            ⭐⭐	        ⭐⭐⭐⭐⭐
+Synonyms	            ⭐⭐⭐⭐⭐	⭐⭐
+Natural language	    ⭐⭐⭐⭐⭐	⭐⭐⭐
+IDs/numbers	            ⭐⭐        	⭐⭐⭐⭐⭐
+
+Hybrid dono ki strengths combine karta hai.
+
+7. Important: Reranker aur Hybrid same nahi hain
+
+Ye confusion mat karna:
+
+Hybrid Search ≠ Reranking
+
+Tumhare pipeline me:
+
+Vector Search ─────┐
+                   ├──→ Fusion → Cohere Rerank
+BM25 Search ───────┘
+8. Tumhare current RAG me Hybrid kaha lagega?
+
+Abhi:
+
+Router
+ ↓
+Retrieval
+ ↓
+Cohere Rerank
+ ↓
+Compression
+ ↓
+Answer
+
+Hybrid add karne ke baad:
+
+Router
+ ↓
+Hybrid Retrieval
+ ↓
+Vector + BM25
+ ↓
+Fusion
+ ↓
+Dedup
+ ↓
+Cohere Rerank
+ ↓
+Compression
+ ↓
+Answer
+
+Aur ek important production optimization:
+
+Har query par hybrid search karna mandatory nahi hai.
+
+Tumhara router later decide kar sakta hai:
+
+DIRECT
+   ↓
+Hybrid Retrieval
+
+REWRITE
+   ↓
+Rewrite
+   ↓
+Hybrid Retrieval
+
+MULTI_QUERY
+   ↓
+Q1 Q2 Q3
+   ↓
+Hybrid Retrieval
+🎯 Ab practical part
+
+Hum next 
+BM25 Retriever ko Node.js + LangChain me implement karenge, phir usko tumhare existing Qdrant retriever ke saath combine karenge.
+
+Sequence:
+
+Lesson 1 ✅ Hybrid Search concept
+        ↓
+Lesson 2 → BM25 Retriever
+        ↓
+Lesson 3 → Vector + BM25
+        ↓
+Lesson 4 → Result Fusion
+        ↓
+Lesson 5 → Hybrid + Cohere Rerank
+        ↓
+Lesson 6 → Hybrid ko Query Router me integrate
+
+
+
+1. BM25 ka basic flow
+
+Tumhare existing ingestion:
+
+PDF
+ ↓
+Extract Text
+ ↓
+Split into Chunks
+ ↓
+LangChain Document[]
+ ↓
+ ┌───────────────┐
+ ↓               ↓
+Qdrant          BM25
+ ↓               ↓
+Vector Search   Keyword Search
+
+BM25 embedding nahi banata.
+
+Vector Search
+Question → Embedding → Qdrant
+
+BM25
+Question → Keywords → Document ranking
+2. Package
+
+Tumhare project me @langchain/community already installed hai, so normally additional package ki zarurat nahi honi chahiye.
+
+BM25 import:
+
+import { BM25Retriever } from "@langchain/community/retrievers/bm25";
+3. Existing PDF chunks ko BM25 me dena
+
+Suppose tumhare PDF processing ke baad tumhare paas:
+
+const documents = [
+  {
+    pageContent: "MongoDB is a NoSQL database...",
+    metadata: {
+      source: "mongodb.pdf",
+      page: 1
+    }
+  },
+  {
+    pageContent: "MongoDB provides horizontal scalability...",
+    metadata: {
+      source: "mongodb.pdf",
+      page: 2
+    }
+  }
+];
+
+Ye LangChain Document[] hona chahiye.
+
+Then:
+
+const bm25Retriever = BM25Retriever.fromDocuments(
+  documents,
+  {
+    k: 5
+  }
+);
+
+Ab:
+
+const result = await bm25Retriever.invoke(
+  "MongoDB scalability"
+);
+4. Practical file banao
+
+For example:
+
+retrievers/
+   bm25Retriever.js
+
+Code:
+
+import { BM25Retriever } from "@langchain/community/retrievers/bm25";
+
+export const createBM25Retriever = async (documents) => {
+  const retriever = BM25Retriever.fromDocuments(
+    documents,
+    {
+      k: 5,
+    }
+  );
+
+  return retriever;
+};
+
+Yahan important point:
+
+documents
+
+tumhare PDF ke chunks hain.
+
+5. Existing PDF chunks se test
+
+Agar tumhare paas already chunks generate karne wala code hai:
+
+const documents = await loadAndSplitPDF();
+
+Then:
+
+const bm25Retriever =
+  await createBM25Retriever(documents);
+
+const result = await bm25Retriever.invoke(
+  "MongoDB scalability"
+);
+
+console.log(result);
+
+Output kuch is type ka milega:
+
+[
+  Document {
+    pageContent: "MongoDB provides horizontal scalability...",
+    metadata: {
+      source: "mongodb.pdf",
+      page: 2
+    }
+  },
+
+  Document {
+    pageContent: "MongoDB is a NoSQL database...",
+    metadata: {
+      source: "mongodb.pdf",
+      page: 1
+    }
+  }
+]
+6. Agar tumhare existing PDF code me Document[] nahi hai
+
+Tumhare PDF extraction ke baad agar plain text mil raha hai:
+
+const text = "...PDF content...";
+
+To pehle chunks banao.
+
+Tum already LangChain text splitters use kar rahi ho, so:
+
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+
+Then:
+
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 500,
+  chunkOverlap: 50,
+});
+
+const documents = await splitter.createDocuments([
+  text
+]);
+
+Ab:
+
+console.log(documents);
+
+Tumhe:
+
+[
+  Document,
+  Document,
+  Document,
+  ...
+]
+
+milega.
+
+Then BM25:
+
+const bm25Retriever =
+  BM25Retriever.fromDocuments(documents, {
+    k: 5,
+  });
+7. Complete small example
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { BM25Retriever } from "@langchain/community/retrievers/bm25";
+
+const pdfText = `
+MongoDB is a NoSQL database.
+
+MongoDB uses a flexible document model.
+
+MongoDB supports horizontal scalability
+through sharding.
+
+MongoDB is commonly used in modern
+web applications.
+`;
+
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 200,
+  chunkOverlap: 30,
+});
+
+const documents = await splitter.createDocuments([
+  pdfText,
+]);
+
+const bm25Retriever = BM25Retriever.fromDocuments(
+  documents,
+  {
+    k: 3,
+  }
+);
+
+const result = await bm25Retriever.invoke(
+  "MongoDB horizontal scalability"
+);
+
+console.log("BM25 result:", result);
+8. k: 3 kya karta hai?
+{
+  k: 3
+}
+
+ka matlab:
+
+BM25 maximum 3 relevant documents return karega.
+
+Example:
+
+PDF chunks = 100
+       ↓
+BM25
+       ↓
+Top 3
+
+Same concept tum Qdrant me bhi use kar rahi ho:
+
+vectorStore.asRetriever({
+  k: 5
+});
+9. Ab important production point — userId
+
+Tumhare Qdrant me tum ye kar rahi ho:
+
+filter: {
+  must: [
+    {
+      key: "userId",
+      match: {
+        value: userId,
+      },
+    },
+  ],
+}
+
+BM25Retriever normally Qdrant jaisa server-side metadata filter nahi deta.
+
+Isliye multi-user RAG me ye important hai:
+
+All PDF Documents
+       ↓
+Filter by userId
+       ↓
+User's Documents
+       ↓
+Create BM25 Retriever
+
+Example:
+
+const userDocuments = documents.filter(
+  (doc) => doc.metadata.userId === userId
+);
+
+const bm25Retriever = BM25Retriever.fromDocuments(
+  userDocuments,
+  {
+    k: 5,
+  }
+);
+
+Ye tenant/user isolation ke liye important hai.
+
+10. BM25 vs tumhara Qdrant
+
+Ab dono ko side-by-side dekho:
+
+Qdrant
+const vectorRetriever = vectorStore.asRetriever({
+  k: 5,
+  filter: {
+    must: [
+      {
+        key: "userId",
+        match: {
+          value: userId,
+        },
+      },
+    ],
+  },
+});
+
+const vectorResults =
+  await vectorRetriever.invoke(question);
+BM25
+const bm25Retriever =
+  BM25Retriever.fromDocuments(
+    userDocuments,
+    {
+      k: 5,
+    }
+  );
+
+const bm25Results =
+  await bm25Retriever.invoke(question);
+
+Ab:
+
+                   Question
+                      ↓
+             ┌────────┴────────┐
+             ↓                 ↓
+        Qdrant Search       BM25 Search
+             ↓                 ↓
+       Vector Results      Keyword Results
+             └────────┬────────┘
+                      ↓
+                  Fusion
+11. Ek important difference
+
+Qdrant:
+
+"How can MongoDB handle large traffic?"
+
+Document:
+
+"MongoDB supports horizontal scaling through sharding."
+
+Vector search meaning samajh sakta hai:
+
+handle large traffic
+       ≈
+horizontal scaling
+
+BM25 ko exact words chahiye hote hain, so semantic match comparatively weak ho sakta hai.
+
+But:
+
+Question:
+"ERR_401"
+
+Document:
+
+"Authentication failed with ERR_401."
+
+BM25 excellent candidate de sakta hai.
+
+Isi liye:
+
+Vector = semantic understanding
+BM25   = lexical/exact matching
+12. Tumhare project ka next actual step
+
+Abhi BM25 Retriever standalone complete karo.
+
+Uske baad hum ye implement karenge:
+
+                 User Question
+                      ↓
+          ┌───────────┴───────────┐
+          ↓                       ↓
+     Qdrant Vector             BM25
+       Search                  Search
+          ↓                       ↓
+      5 results               5 results
+          └───────────┬───────────┘
+                      ↓
+                  Fusion
+                      ↓
+                Deduplicate
+                      ↓
+               Cohere Rerank
+                      ↓
+              Context Compression
+                      ↓
+                  Answer
