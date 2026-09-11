@@ -496,3 +496,120 @@ MongoDB → parent
  ↓
 LLM
 ------------------------------
+                    RAG
+                     │
+        ┌────────────┴────────────┐
+        ↓                         ↓
+   Retrieval                  Generation
+        │                         │
+        ├── Parent-Child ✅       ├── Prompting
+        ├── Metadata Filter ✅    ├── Grounding
+        ├── Top-K                  ├── Structured output
+        ├── Threshold              └── Citations
+        │
+        ├── Hybrid Search 🔥
+        │      ├── Dense search
+        │      ├── BM25
+        │      └── Combine results
+        │
+        ├── Reranking 🔥
+        │
+        ├── MMR 🔥
+        │
+        ├── Query Rewriting 🔥
+        │
+        ├── Multi-Query Retrieval
+        │
+        └── Contextual Compression
+
+-----------------------
+
+Tumhare liye practical sequence
+
+Main tumhe ab ye sequence follow karne bolungi:
+
+Phase 1 — Parent–Child production cleanup
+
+deterministic IDs
+metadata
+filtering
+duplicate handling
+ranking preservation
+context limits
+
+Phase 2 — Hybrid Search
+
+Dense/vector search
+BM25/keyword search
+Reciprocal Rank Fusion
+when hybrid is better
+
+Phase 3 — Reranking
+
+retrieve 10–20
+reranker
+select top 3–5
+
+Phase 4 — MMR
+
+relevance + diversity
+duplicate/similar context reduction
+
+Phase 5 — Query Transformation
+
+query rewriting
+multi-query
+HyDE
+decomposition
+
+Phase 6 — RAG Evaluation
+
+retrieval quality
+faithfulness
+answer relevance
+context relevance
+precision/recall
+RAGAS / evaluation datasets
+
+Phase 7 — Production RAG
+
+caching
+metadata/security
+ingestion pipeline
+document updates/deletion
+observability
+latency/cost
+fallback handling
+And then 🚀
+
+Tumhara RAG architecture kuch aisa ho sakta hai:
+
+                    USER
+                      ↓
+                  Question
+                      ↓
+              Query Transformation
+                      ↓
+              ┌───────┴───────┐
+              ↓               ↓
+         Vector Search     BM25 Search
+              ↓               ↓
+              └───────┬───────┘
+                      ↓
+                Hybrid Results
+                      ↓
+                   Reranker
+                      ↓
+                Parent Mapping
+                      ↓
+                  MongoDB
+                      ↓
+              Parent Context
+                      ↓
+              Context Compression
+                      ↓
+                    LLM
+                      ↓
+                   Answer
+
+Ye level tumhe sirf “RAG bana liya” se nikal kar “production RAG system design kar sakti hoon” level par le jayega. 🔥

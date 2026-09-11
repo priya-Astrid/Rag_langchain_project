@@ -2,6 +2,7 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { generateEmbedding } from "../config/createEmbedding.js";
 import { QdrantSetup } from "../config/qdrantSetup.js";
+import { Parent } from "./parentStoredb.js";
 
 export const parentStore = async (pdf) => {
   console.log("response", pdf);
@@ -14,11 +15,15 @@ export const parentStore = async (pdf) => {
     chunkOverlap: 50,
   });
 
+  const documentId = crypto.randomUUID();
   const parentDoc = await parentSplitter.splitDocuments(docs);
   const parents = parentDoc.map((doc, index) => ({
     parentId: `parent-${index + 1}`,
+    documentId,
+    filename: pdf.originalname,
     text: doc.pageContent,
   }));
+  await Parent.insertMany(parents);
   // child chunk
   const childSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 200,
@@ -57,7 +62,7 @@ export const parentStore = async (pdf) => {
       childId: children[index].childId,
       filename: pdf.originalname,
       chunkIndex: index,
-      text: children[index].pageContent,
+      text: children[index].text,
     },
   }));
   await QdrantSetup.upsert("ChildPdfStore", {
