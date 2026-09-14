@@ -1,0 +1,291 @@
+Hybrid Search — Part 2: Dense + Sparse ko combine kaise karein?
+Abhi tumne Sparse Retrieval / BM25 practically kar liya:
+
+Query
+ ↓
+BM25
+ ↓
+Keyword-based ranking
+ ↓
+Top K Documents
+
+Aur tumhara existing RAG already Dense Retrieval karta hai:
+
+Query
+ ↓
+Embedding
+ ↓
+Qdrant Vector Search
+ ↓
+Semantic ranking
+ ↓
+Top K Documents
+
+---------------------------------------
+Ab dono ko combine karna hai.
+
+1. Problem samjho
+
+Maan lo user query hai:
+
+What is MongoTopologyClosedError?
+
+Humare paas documents hain:
+
+D1: MongoDB manages database connections.
+
+D2: MongoTopologyClosedError occurs when MongoDB
+    topology has already been closed.
+
+D3: Database connection problems can occur because
+    of network issues.
+
+D4: MongoDB is a NoSQL database.
+
+D5: MongoDB connection pool manages connections.
+Dense Search result
+
+Semantic meaning ke basis par:
+
+D3 → Rank 1
+D2 → Rank 2
+D1 → Rank 3
+BM25 result
+
+Exact keyword ke basis par:
+
+D2 → Rank 1
+D1 → Rank 2
+D5 → Rank 3
+
+Notice karo:
+
+Dense aur BM25 ki ranking different hai.
+
+Ab question:
+
+Dono results ko combine karke final ranking kaise banayenge?
+
+Yahi next concept hai.
+
+2. Score directly add karna easy nahi hai
+
+Suppose Dense search:
+
+D1 → 0.91
+D2 → 0.87
+D3 → 0.82
+
+BM25:
+
+D2 → 8.5
+D1 → 5.2
+D5 → 3.8
+
+Problem:
+
+Dense score → 0.91
+BM25 score → 8.5
+
+Dono scores ka scale different hai.
+
+Agar simply:
+
+denseScore + bm25Score
+
+karoge, to BM25 dominate kar sakta hai.
+
+Isliye hybrid retrieval me ek common approach hai:
+
+⭐ Reciprocal Rank Fusion — RRF
+------------------------------
+
+RRF kya hai?
+
+Simple definition:
+
+RRF multiple ranked result lists ko unke rank ke basis par combine karke ek final ranking banata hai.
+
+Important:
+
+RRF actual score ki jagah rank ko importance deta hai.
+
+Example:
+
+Dense:
+D2 → Rank 1
+D3 → Rank 2
+D1 → Rank 3
+
+BM25:
+D1 → Rank 1
+D2 → Rank 2
+D5 → Rank 3
+
+RRF kahega:
+
+Jo document dono searches me high rank par aa raha hai, usko strong importance do.
+
+4. RRF formula
+
+Formula:
+
+RRF Score(d) = Σ 1 / (k + rank(d))
+
+Yahan k ek constant hota hai, usually 60 commonly use hota hai.
+
+Abhi formula dekhkar tension mat lena 😄
+
+Bas logic samjho:
+
+Rank 1 → highest contribution
+Rank 2 → slightly lower
+Rank 3 → lower
+...
+5. Example
+
+Suppose:
+
+Dense
+D2 → Rank 1
+D3 → Rank 2
+D1 → Rank 3
+BM25
+D1 → Rank 1
+D2 → Rank 2
+D5 → Rank 3
+
+RRF:
+
+D2
+
+Dense rank = 1
+
+BM25 rank = 2
+
+D2 = 1/(60+1) + 1/(60+2)
+D1
+
+Dense rank = 3
+
+BM25 rank = 1
+
+D1 = 1/(60+3) + 1/(60+1)
+D3
+
+Only Dense:
+
+D3 = 1/(60+2)
+D5
+
+Only BM25:
+
+D5 = 1/(60+3)
+
+Isse dono ranking lists merge ho jaati hain.
+
+6. Important intuition 🧠
+
+RRF ka main idea:
+
+                Dense Search
+                     ↓
+              Ranked Results
+                     ↓
+                     │
+                     ├──────→ RRF
+                     │
+              Ranked Results
+                     ↑
+                BM25 Search
+
+RRF dekhta hai:
+
+"Ye document Dense search me kitne upar tha?"
+
+aur:
+
+"Ye document BM25 me kitne upar tha?"
+
+Phir dono ranks ka combined score banata hai.
+
+7. Real Hybrid RAG
+
+Ab tumhare project ko imagine karo:
+
+                     User Query
+                         ↓
+              ┌──────────┴──────────┐
+              ↓                     ↓
+        Dense Retrieval        Sparse Retrieval
+              ↓                     ↓
+           Qdrant                  BM25
+              ↓                     ↓
+        Vector Results          Keyword Results
+              └──────────┬──────────┘
+                         ↓
+                        RRF
+                         ↓
+                  Final Ranking
+                         ↓
+                       Top-K
+                         ↓
+                       Gemini
+                         ↓
+                      Answer
+
+🔥 Ye actual Hybrid RAG architecture hai.
+
+8. Tumhare existing project me kya change hoga?
+
+Abhi tumhare paas:
+
+PDF
+ ↓
+Chunk
+ ↓
+Embedding
+ ↓
+Qdrant
+ ↓
+Vector Search
+
+Aur ab tumne BM25 bana liya:
+
+Chunks
+ ↓
+BM25
+ ↓
+Keyword Search
+
+Next hum dono ko connect karenge:
+
+                 Chunks
+                /      \
+               ↓        ↓
+          Embeddings   BM25
+               ↓        ↓
+            Qdrant    Sparse
+               ↓        ↓
+             Dense     Sparse
+               \        /
+                \      /
+                  RRF
+                   ↓
+               Top Results
+🎯 Abhi tumhe kya yaad rakhna hai?
+
+Notes me ye likho:
+
+Dense Retrieval
+Semantic / meaning based
+Embedding + Vector DB
+Sparse Retrieval
+Keyword based
+BM25
+Hybrid Retrieval
+Dense + Sparse
+RRF
+Rank-based fusion technique
+Dense results + Sparse results
+→ Final ranking

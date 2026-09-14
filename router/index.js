@@ -2,11 +2,13 @@ import express from "express";
 import { userTopicData } from "../controller/userTopic.js";
 import multer from "multer";
 import { pdfUpload } from "../controller/pdfUpload.js";
+import { uploadDocument } from "../parentChild/uploadDocument.js";
 const router = express.Router();
 
 const upload = multer({dest:"upload/"});
 
-// router.post("/upload", upload.single("pdf"),pdfUpload );
+// router.post("/upload", upload.single("pdf"),pdfUpload);
+router.post("/parentUpload", upload.single("file"), uploadDocument );
 
 router.post("/upload", upload.array("pdfs",2) ,pdfUpload );
 

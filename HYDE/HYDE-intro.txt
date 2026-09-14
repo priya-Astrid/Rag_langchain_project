@@ -1,0 +1,178 @@
+Hybrid Search + RRF       ← current
+        ↓
+HyDE
+        ↓
+Parent-Child Retrieval
+        ↓
+Semantic / Contextual Chunking
+        ↓
+Multi-Vector Retrieval
+        ↓
+Contextual Retrieval
+        ↓
+CRAG
+        ↓
+Self-RAG
+        ↓
+Adaptive RAG
+        ↓
+Agentic RAG
+        ↓
+RAG Evaluation
+        ↓
+Production RAG
+--------------------------------
+. Pehle problem samjho
+
+Normal RAG:
+
+User Question
+      ↓
+Question Embedding
+      ↓
+Qdrant Search
+      ↓
+Relevant Chunks
+
+Example:
+
+Question:
+"MongoDB scalable kyu hai?"
+
+Hum directly iska embedding banate hain.
+
+2. HyDE mein kya different hai?
+
+HyDE mein question ko directly search nahi karte.
+
+Pehle LLM se hypothetical answer/document generate karwate hain:
+
+User Question
+      ↓
+Gemini
+      ↓
+Hypothetical Document
+      ↓
+Embedding
+      ↓
+Qdrant Search
+      ↓
+Real Documents
+      ↓
+Final LLM Answer
+
+Example:
+
+Question:
+"MongoDB scalable kyu hai?"
+
+Gemini internally generate karega:
+
+"MongoDB is scalable because it supports horizontal
+scaling, sharding, distributed deployments..."
+
+⚠️ Ye answer actual answer nahi hai. Ye sirf retrieval ke liye ek hypothetical document hai.
+
+3. Normal RAG vs HyDE
+Normal RAG
+const embedding = await generateEmbedding(question);
+
+const results = await qdrant.search(embedding);
+HyDE
+const hypotheticalDocument = await llm.invoke(question);
+
+const embedding = await generateEmbedding(
+  hypotheticalDocument
+);
+
+const results = await qdrant.search(embedding);
+
+Main difference sirf itna hai ki embedding kis cheez ka ban raha hai.
+
+Normal:
+
+question → embedding
+
+HyDE:
+
+question
+   ↓
+hypothetical answer
+   ↓
+embedding
+4. Ab tumhara practical implementation
+
+Tumhare project mein pehla function banao:
+
+hybridSearch/
+   └── hyde.js
+
+Isme initially sirf hypothetical document generation karenge.
+
+Tumhara existing Gemini config use karo:
+
+import { generateContentAI } from "../config/generateContent.js";
+
+export const generateHypotheticalDocument = async (question) => {
+  const model = generateContentAI();
+
+  const prompt = `
+You are generating a hypothetical document for information retrieval.
+
+Do not answer the user directly.
+Generate a short hypothetical passage that could contain
+the information needed to answer the question.
+
+Question:
+${question}
+`;
+
+  const response = await model.invoke(prompt);
+
+  return response.content;
+};
+5. Test karo
+const question = "What are the benefits of MongoDB?";
+
+const hypotheticalDocument =
+  await generateHypotheticalDocument(question);
+
+console.log("HYDE DOCUMENT:", hypotheticalDocument);
+
+Output kuch aisa ho sakta hai:
+
+HYDE DOCUMENT:
+
+MongoDB provides several benefits including flexible
+schema design, horizontal scalability, high performance,
+and efficient storage of JSON-like documents...
+
+Important: exact output Gemini ke according change hoga.
+
+6. Abhi yahin stop karo
+
+Abhi hum:
+
+❌ Qdrant nahi lagayenge
+❌ RRF nahi lagayenge
+❌ BM25 nahi lagayenge
+❌ Final answer generate nahi karenge
+
+Pehle ek cheez crystal clear honi chahiye:
+
+HyDE mein LLM-generated hypothetical document ka embedding retrieval ke liye use hota hai.
+
+Tumhare next step mein hum isi:
+
+question
+   ↓
+hypotheticalDocument
+   ↓
+embedding
+   ↓
+Qdrant
+
+ko tumhare existing Qdrant code ke saath connect karenge.
+
+Pehle ye function run karo aur HYDE DOCUMENT ka output dekho.
+---------------------------

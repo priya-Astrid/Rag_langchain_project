@@ -1,0 +1,615 @@
+1. Parent-Child Retrieval hota kya hai?
+
+Normal RAG mein hum document ko chunks mein todte hain:
+
+PDF
+ ↓
+Chunk 1
+Chunk 2
+Chunk 3
+Chunk 4
+ ↓
+Embedding
+ ↓
+Vector DB
+
+Problem ye hai ki agar chunks bahut small hain, retrieval accurate ho sakta hai, lekin context incomplete mil sakta hai.
+
+Example:
+
+Parent Document
+└── MongoDB
+    ├── Introduction
+    ├── Collection
+    ├── Document
+    ├── Query
+    └── Index
+
+Hum search ke liye small child chunks banayenge:
+
+Parent
+ ├── Child 1 → "A collection is..."
+ ├── Child 2 → "A document is..."
+ ├── Child 3 → "MongoDB supports..."
+ └── Child 4 → "Indexes improve..."
+
+Vector DB mein child chunks ke embeddings store honge.
+
+Lekin retrieval ke baad hum sirf child nahi denge.
+
+User Question
+      ↓
+Search Child Chunks
+      ↓
+Matched Child
+      ↓
+Find Parent
+      ↓
+Return Parent Context
+      ↓
+LLM
+Core idea
+
+Small chunks for better retrieval, larger parent chunks for better context.
+
+Ye Parent-Child Retrieval ka sabse important point hai.
+
+2. Tumhare current RAG se difference
+
+Tum abhi roughly ye kar rahi ho:
+
+PDF
+ ↓
+chunks
+ ↓
+embedding
+ ↓
+Qdrant
+ ↓
+top chunks
+ ↓
+LLM
+
+Parent-Child mein:
+
+PDF
+ ↓
+Parent Chunks
+ ↓
+Small Child Chunks
+ ↓
+Child embeddings
+ ↓
+Qdrant
+ ↓
+Child search
+ ↓
+Parent lookup
+ ↓
+Parent context
+ ↓
+LLM
+3. Ek real example
+
+Suppose PDF mein ye content hai:
+
+MongoDB
+
+MongoDB is a NoSQL database designed for scalability.
+
+Collection
+
+A collection is a group of related documents, similar to a table in SQL.
+Collections can contain multiple documents.
+
+Document
+
+A document is a JSON-like record stored inside a MongoDB collection.
+Documents can have different structures.
+
+Agar hum small chunks banate hain:
+
+child-1:
+"Collection is a group of related documents..."
+
+child-2:
+"Collections can contain multiple documents."
+
+child-3:
+"Document is a JSON-like record..."
+
+User asks:
+
+What is a collection?
+
+Child search:
+
+child-1 → high similarity
+
+Lekin agar child-1 bahut chhota hai, LLM ko surrounding information nahi milegi.
+
+Isliye:
+
+child-1
+   ↓
+parent-collection-section
+   ↓
+"A collection is...
+ Collections can contain...
+ ..."
+
+LLM ko richer context milega.
+
+4. Architecture jo tum implement karogi
+
+Main tumhe 2-layer architecture recommend karunga:
+
+                PDF
+                 │
+                 ▼
+          Parent Chunking
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+    Parent-1          Parent-2
+        │                 │
+        ▼                 ▼
+ Child Chunking       Child Chunking
+   │   │   │            │   │   │
+   ▼   ▼   ▼            ▼   ▼   ▼
+ child child child    child child child
+        │
+        ▼
+   Embedding
+        │
+        ▼
+     Qdrant
+
+Qdrant mein hum child chunks store karenge.
+
+Har child ke metadata mein:
+
+{
+  childId: "child-1",
+  parentId: "parent-1",
+  documentId: "...",
+  userId: "...",
+  text: "A collection is a group..."
+}
+
+Important field:
+
+parentId
+
+Ye hi child ko parent se connect karega.
+
+5. Parent aur Child ka size
+
+Start mein simple rakho.
+
+Example:
+
+Parent chunk:
+1000 characters
+
+Child chunk:
+300 characters
+
+Overlap:
+50
+
+Concept:
+
+Parent 1
+──────────────────────────────
+     ↓
+ Child 1
+ Child 2
+ Child 3
+──────────────────────────────
+
+Parent 2
+──────────────────────────────
+     ↓
+ Child 4
+ Child 5
+ Child 6
+──────────────────────────────
+
+Important: Ye fixed universal numbers nahi hain. Production mein document type ke according tune karte hain.
+
+6. Sabse pehle implementation ka first step
+
+Abhi direct code mat likho.
+
+Pehle apne existing project mein ek naya flow banao:
+
+parentChild/
+    ├── createParentChild.js
+    └── askParentChild.js
+
+Aur existing flow ko touch mat karo:
+
+RAG/
+HYBRID/
+HYDE/
+parentChild/
+
+Isse tum clearly compare kar paogi:
+
+Normal RAG
+vs
+Hybrid RAG
+vs
+HyDE
+vs
+Parent-Child Retrieval
+7. Parent chunks create karna
+
+Tum already RecursiveCharacterTextSplitter use kar chuki ho.
+
+Parent ke liye:
+
+const parentSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 100,
+});
+
+const parentDocs = await parentSplitter.splitDocuments(docs);
+
+Ab maan lo:
+
+parentDocs = [
+  parent1,
+  parent2,
+  parent3
+];
+
+Har parent ko ID deni hai:
+
+const parents = parentDocs.map((doc, index) => ({
+  parentId: `parent-${index + 1}`,
+  text: doc.pageContent,
+}));
+8. Ab child chunks
+
+Har parent ko further small chunks mein todna hai.
+
+const childSplitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 300,
+  chunkOverlap: 50,
+});
+
+Phir:
+
+for (const parent of parents) {
+  const childDocs = await childSplitter.createDocuments([parent.text]);
+
+  console.log(childDocs);
+}
+
+Conceptually:
+
+parent-1
+   ↓
+child-1
+child-2
+child-3
+
+Aur metadata:
+
+{
+  childId: "child-1",
+  parentId: "parent-1"
+}
+9. Yahan ek important production concept
+
+Tumhe Parent ko bhi kahin store karna padega.
+
+Do common approaches hain:
+
+Approach A — MongoDB
+MongoDB
+  parentId
+  parentText
+
+Aur:
+
+Qdrant
+  child embedding
+  child text
+  parentId
+
+Retrieval:
+
+Qdrant
+ ↓
+child
+ ↓
+parentId
+ ↓
+MongoDB
+ ↓
+parent
+Approach B — In-memory / separate store
+
+Learning ke liye Map bhi use kar sakti ho:
+
+const parentStore = new Map();
+
+parentStore.set(parentId, parentText);
+
+Lekin production mein persistent storage better hai.
+
+10. Tumhare project ke liye recommended design
+
+Tum already MongoDB + Qdrant jaanti ho, so tumhare liye:
+
+                ┌──────────────┐
+                │     PDF      │
+                └──────┬───────┘
+                       ↓
+                Parent Chunks
+                       ↓
+                Child Chunks
+                       ↓
+              ┌────────┴────────┐
+              ↓                 ↓
+          Qdrant             MongoDB
+          children            parents
+              │                 │
+              │ parentId        │
+              └────────┬────────┘
+                       ↓
+                 Retrieved Parent
+                       ↓
+                    LLM
+
+Ye tumhare backend knowledge ke saath bhi nicely fit hota hai.
+---------------------------------
+
+
+Tumhare case mein best architecture:
+
+                 PDF
+                  ↓
+            Parent Chunks
+                  ↓
+          ┌───────┴───────┐
+          ↓               ↓
+      MongoDB           Child Chunks
+      (Parent)              ↓
+                            ↓
+                         Qdrant
+                       (Embedding)
+
+Example
+
+MongoDB mein:
+
+{
+  parentId: "parent-1",
+  documentId: "pdf-123",
+  userId: "priya123",
+  text: "MongoDB is a NoSQL database. A collection is a group of related documents..."
+}
+
+Qdrant mein:
+
+{
+  vector: [...],
+  payload: {
+    childId: "child-1",
+    parentId: "parent-1",
+    documentId: "pdf-123",
+    text: "A collection is a group of related documents."
+  }
+}
+
+Phir user poochta hai:
+
+What is a collection?
+
+Qdrant:
+
+Question
+   ↓
+Embedding
+   ↓
+Qdrant
+   ↓
+child-1 matched
+   ↓
+parentId = parent-1
+
+Phir:
+
+parentId
+   ↓
+MongoDB
+   ↓
+parent-1 ka complete text
+   ↓
+LLM
+Lekin ek important baat
+
+Parent ko MongoDB mein hi store karna compulsory nahi hai.
+
+Tum Parent ko:
+
+MongoDB
+PostgreSQL
+Redis
+separate document store
+ya kisi aur persistent storage
+
+mein rakh sakti ho.
+
+--------------
+Pehle architecture fix kar lo
+PDF Upload
+   ↓
+Parent Chunks
+   ↓
+Child Chunks
+   ↓
+ ┌───────────────┬────────────────┐
+ ↓               ↓
+MongoDB          Qdrant
+Parent           Child + Embedding
+ ↓
+        User Question
+              ↓
+        Child Retrieval
+              ↓
+          parentId
+              ↓
+        MongoDB Parent
+              ↓
+             LLM
+              ↓
+          Final Answer
+Tumhare existing project mein 2 cheezein banani hain
+
+1. Ingestion time
+
+PDF
+ ↓
+Parent chunks
+ ↓
+Child chunks
+ ↓
+Parent → MongoDB
+Child → Qdrant
+
+2. Question time
+
+Question
+ ↓
+Embedding
+ ↓
+Qdrant → child
+ ↓
+parentId
+ ↓
+MongoDB → parent
+ ↓
+LLM
+------------------------------
+                    RAG
+                     │
+        ┌────────────┴────────────┐
+        ↓                         ↓
+   Retrieval                  Generation
+        │                         │
+        ├── Parent-Child ✅       ├── Prompting
+        ├── Metadata Filter ✅    ├── Grounding
+        ├── Top-K                  ├── Structured output
+        ├── Threshold              └── Citations
+        │
+        ├── Hybrid Search 🔥
+        │      ├── Dense search
+        │      ├── BM25
+        │      └── Combine results
+        │
+        ├── Reranking 🔥
+        │
+        ├── MMR 🔥
+        │
+        ├── Query Rewriting 🔥
+        │
+        ├── Multi-Query Retrieval
+        │
+        └── Contextual Compression
+
+-----------------------
+
+Tumhare liye practical sequence
+
+Main tumhe ab ye sequence follow karne bolungi:
+
+Phase 1 — Parent–Child production cleanup
+
+deterministic IDs
+metadata
+filtering
+duplicate handling
+ranking preservation
+context limits
+
+Phase 2 — Hybrid Search
+
+Dense/vector search
+BM25/keyword search
+Reciprocal Rank Fusion
+when hybrid is better
+
+Phase 3 — Reranking
+
+retrieve 10–20
+reranker
+select top 3–5
+
+Phase 4 — MMR
+
+relevance + diversity
+duplicate/similar context reduction
+
+Phase 5 — Query Transformation
+
+query rewriting
+multi-query
+HyDE
+decomposition
+
+Phase 6 — RAG Evaluation
+
+retrieval quality
+faithfulness
+answer relevance
+context relevance
+precision/recall
+RAGAS / evaluation datasets
+
+Phase 7 — Production RAG
+
+caching
+metadata/security
+ingestion pipeline
+document updates/deletion
+observability
+latency/cost
+fallback handling
+And then 🚀
+
+Tumhara RAG architecture kuch aisa ho sakta hai:
+
+                    USER
+                      ↓
+                  Question
+                      ↓
+              Query Transformation
+                      ↓
+              ┌───────┴───────┐
+              ↓               ↓
+         Vector Search     BM25 Search
+              ↓               ↓
+              └───────┬───────┘
+                      ↓
+                Hybrid Results
+                      ↓
+                   Reranker
+                      ↓
+                Parent Mapping
+                      ↓
+                  MongoDB
+                      ↓
+              Parent Context
+                      ↓
+              Context Compression
+                      ↓
+                    LLM
+                      ↓
+                   Answer
+
+Ye level tumhe sirf “RAG bana liya” se nikal kar “production RAG system design kar sakti hoon” level par le jayega. 🔥
